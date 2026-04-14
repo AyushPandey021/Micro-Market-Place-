@@ -1,6 +1,6 @@
 export default {
     testEnvironment: 'node',
-    extensionsToTreatAsEsm: ['.js'],
+    extensionsToTreatAsEsm: [],
     testPathIgnorePatterns: ['/node_modules/'],
     setupFiles: ['./jest.setup.js'],
     moduleFileExtensions: ['js', 'json'],

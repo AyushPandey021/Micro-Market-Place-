@@ -2,6 +2,7 @@ import express from "express";
 import multer from 'multer';
 import { createProduct } from '../controllers/productController.js';
 import createAuthMiddleware from "../middleware/auth.middleware.js";
+import { validateCreateProduct } from "../middleware/validation.middleware.js";
 
 const router = express.Router();
 
@@ -24,6 +25,6 @@ const upload = multer({
 });
 
 // POST /api/products
-router.post('/', createAuthMiddleware(['admin', 'seller']), upload.array('images', 10), createProduct);
+router.post('/', createAuthMiddleware(['admin', 'seller']), upload.array('Images', 10), validateCreateProduct, createProduct);
 
 export default router;

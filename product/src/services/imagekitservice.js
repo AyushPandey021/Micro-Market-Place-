@@ -1,7 +1,23 @@
 import ImageKit from 'imagekit';
-
+import { v4 as uuidv4 } from 'uuid';
 class ImageKitService {
     constructor() {
+        if (process.env.NODE_ENV === 'test') {
+            this.imagekit = {
+                upload: async ({ fileName }) => ({
+                    url: `https://test.imagekit.io/${fileName}`,
+                    fileId: `test-${fileName}`,
+                    thumbnail: `https://test.imagekit.io/${fileName}-thumb`
+                }),
+                deleteFile: async () => true
+            };
+            return;
+        }
+
+        if (!process.env.IMAGEKIT_PUBLIC_KEY || !process.env.IMAGEKIT_PRIVATE_KEY || !process.env.IMAGEKIT_URL_ENDPOINT) {
+            throw new Error('Missing ImageKit environment variables');
+        }
+
         this.imagekit = new ImageKit({
             publicKey: process.env.IMAGEKIT_PUBLIC_KEY,
             privateKey: process.env.IMAGEKIT_PRIVATE_KEY,
@@ -13,7 +29,7 @@ class ImageKitService {
         try {
             const result = await this.imagekit.upload({
                 file: file.buffer, // Assuming multer is used
-                fileName: file.originalname,
+                fileName: uuidv4(),
                 folder: folder
             });
 

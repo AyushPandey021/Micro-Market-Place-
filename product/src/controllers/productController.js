@@ -3,53 +3,45 @@ import imageKitService from '../services/imagekitservice.js';
 
 export const createProduct = async (req, res) => {
     try {
-        const { name, description, price, seller } = req.body;
+        const { title, description, priceAmount, priceCurrency } = req.body;
+        const seller = req.user?.id || req.body.seller;
 
-        // Validate required fields
-        if (!name || !price || !price.amount || !seller) {
+        if (!req.files || req.files.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Name, price.amount, and seller are required'
+                message: 'Images are required'
             });
         }
 
         let images = [];
-
-        // Handle image uploads if files are provided
-        if (req.files && req.files.length > 0) {
-            try {
-                const uploadPromises = req.files.map(file => imageKitService.uploadImage(file));
-                const uploadResults = await Promise.all(uploadPromises);
-                images = uploadResults.map(result => ({
-                    url: result.url,
-                    fileId: result.fileId,
-                    thumbnail: result.thumbnail
-                }));
-            } catch (uploadError) {
-                console.error('Image upload error:', uploadError);
-                return res.status(500).json({
-                    success: false,
-                    message: 'Failed to upload images'
-                });
-            }
+        try {
+            const uploadPromises = req.files.map(file => imageKitService.uploadImage(file));
+            const uploadResults = await Promise.all(uploadPromises);
+            images = uploadResults.map(result => ({
+                url: result.url,
+                fileId: result.fileId,
+                thumbnail: result.thumbnail
+            }));
+        } catch (uploadError) {
+            console.error('Image upload error:', uploadError);
+            return res.status(500).json({
+                success: false,
+                message: 'Failed to upload images'
+            });
         }
 
         // Create new product
         const product = new Product({
-            name,
+            title,
             description,
-            price: {
-                amount: price.amount,
-                currency: price.currency || 'INR'
-            },
+            priceAmount,
+            priceCurrency: priceCurrency || 'INR',
             seller,
-            images: images
+            images
         });
 
-        // Save to database
         await product.save();
 
-        // Return success response
         res.status(201).json({
             success: true,
             message: 'Product created successfully',

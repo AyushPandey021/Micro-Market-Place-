@@ -1,28 +1,24 @@
 import mongoose from "mongoose";
 const productSchema = new mongoose.Schema({
-    name: {
+    title: {
         type: String,
         required: true
     },
     description: {
-        type: String,
-
+        type: String
     },
-    price: {
-        amount: {
-            type: Number,
-            required: true
-        },
-        currency: {
-            type: String,
-            enum: ["INR", "EUR", "GBP"],
-            default: "INR"
-        }
+    priceAmount: {
+        type: Number,
+        required: true
+    },
+    priceCurrency: {
+        type: String,
+        enum: ["INR", "EUR", "GBP"],
+        default: "INR"
     },
     seller: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        required: true
+        ref: "User"
     },
     images: [
         {
@@ -31,9 +27,8 @@ const productSchema = new mongoose.Schema({
             fileId: String
         }
     ]
-
-},
-
-);
+}, {
+    timestamps: true
+});
 const Product = mongoose.model("Product", productSchema);
 export default Product;
