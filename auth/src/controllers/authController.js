@@ -11,7 +11,8 @@ async function register(req, res) {
             password,
             fullName = {},
             firstName: topFirstName,
-            lastName: topLastName
+            lastName: topLastName,
+            role
         } = req.body;
 
         const firstName = fullName.firstName || topFirstName;
@@ -36,7 +37,8 @@ async function register(req, res) {
             fullName: {
                 firstName,
                 lastName
-            }
+            },
+            role
         });
 
         const jwtSecret = process.env.JWT_SECRET || 'default_jwt_secret';

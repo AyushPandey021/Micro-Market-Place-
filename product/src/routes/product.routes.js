@@ -1,6 +1,6 @@
 import express from "express";
 import multer from 'multer';
-import { createProduct } from '../controllers/productController.js';
+import { getProducts, createProduct } from '../controllers/productController.js';
 import createAuthMiddleware from "../middleware/auth.middleware.js";
 import { validateCreateProduct } from "../middleware/validation.middleware.js";
 
@@ -23,6 +23,9 @@ const upload = multer({
         }
     }
 });
+
+// GET /api/products
+router.get('/', getProducts);
 
 // POST /api/products
 router.post('/', createAuthMiddleware(['admin', 'seller']), upload.array('Images', 10), validateCreateProduct, createProduct);

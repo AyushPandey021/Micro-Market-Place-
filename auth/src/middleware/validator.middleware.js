@@ -18,6 +18,7 @@ const registerValidationRules = () => {
         body('fullName.lastName').optional().notEmpty().withMessage('Last name is required'),
         body('firstName').optional().notEmpty().withMessage('First name is required'),
         body('lastName').optional().notEmpty().withMessage('Last name is required'),
+        body('role').optional().isIn(['user', 'seller']).withMessage('Role must be either user or seller'),
         body().custom((_, { req }) => {
             const firstName = req.body.fullName?.firstName || req.body.firstName;
             const lastName = req.body.fullName?.lastName || req.body.lastName;
@@ -41,10 +42,10 @@ const loginValidationRules = () => {
 
 const addUserAddressValidationRules = () => {
     return [
-        body('street').notEmpty().withMessage('Street is required'),    
+        body('street').notEmpty().withMessage('Street is required'),
         body('city').notEmpty().withMessage('City is required'),
         body('state').notEmpty().withMessage('State is required'),
-        body('zip').notEmpty().withMessage('Zip code is required'),     
+        body('zip').notEmpty().withMessage('Zip code is required'),
         body('country').notEmpty().withMessage('Country is required'),
         responseWithValidationErrors
     ];
