@@ -14,7 +14,7 @@ import {
 
 const router = express.Router();
 
-const authUser = createAuthMiddleware(['user', 'admin']);
+const authUser = createAuthMiddleware(['user', 'admin', 'seller']);
 
 router.get('/', authUser, getCart);
 router.post('/items', authUser, validateAddToCart, addToCart);

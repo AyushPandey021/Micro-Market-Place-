@@ -53,6 +53,7 @@ async function register(req, res) {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
+            domain: 'localhost',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
@@ -97,6 +98,7 @@ async function login(req, res) {
             httpOnly: true,
             secure: process.env.NODE_ENV === 'production',
             sameSite: 'lax',
+            domain: 'localhost',
             maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
