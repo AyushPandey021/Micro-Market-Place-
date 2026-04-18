@@ -7,7 +7,9 @@ import { connectRabbitMQ } from './src/services/rabbitmq.js';
 connectDB();
 
 // Connect to RabbitMQ
-connectRabbitMQ();
+if (process.env.SKIP_RABBITMQ !== 'true') {
+    connectRabbitMQ();
+}
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {

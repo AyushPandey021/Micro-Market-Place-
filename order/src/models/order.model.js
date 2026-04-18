@@ -14,6 +14,10 @@ const orderItemSchema = new mongoose.Schema({
         type: Number,
         required: true,
         min: 0
+    },
+    name: {
+        type: String,
+        required: true
     }
 });
 
@@ -43,7 +47,7 @@ const shippingAddressSchema = new mongoose.Schema({
 const timelineSchema = new mongoose.Schema({
     status: {
         type: String,
-        enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'],
+        enum: ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'address_updated'],
         required: true
     },
     timestamp: {

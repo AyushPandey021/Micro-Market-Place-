@@ -3,7 +3,7 @@ import Order from '../models/order.model.js';
 import { getCart, clearCart } from '../services/cartService.js';
 import { checkInventory, updateInventory } from '../services/productService.js';
 import { processPayment } from '../services/paymentService.js';
-import { publishEvent } from '../services/rabbitmqService.js';
+import { publishEvent } from '../services/rabbitmq.js';
 
 export const createOrder = async (req, res) => {
     try {
@@ -29,8 +29,19 @@ export const createOrder = async (req, res) => {
             });
         }
 
+        // Update cart items with current prices and names
+        const updatedItems = cart.items.map(item => {
+            const productInfo = inventoryCheck.itemsWithPrices.find(p => p.productId === item.productId);
+            return {
+                productId: item.productId,
+                quantity: item.quantity,
+                price: productInfo.price,
+                name: productInfo.name
+            };
+        });
+
         // Calculate total amount
-        const totalAmount = cart.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+        const totalAmount = updatedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
         // Process payment (simplified)
         const paymentResult = await processPayment(totalAmount, req.user);
@@ -46,7 +57,7 @@ export const createOrder = async (req, res) => {
         const order = new Order({
             orderId,
             userId,
-            items: cart.items,
+            items: updatedItems,
             totalAmount,
             shippingAddress,
             paymentId: paymentResult.paymentId,
@@ -65,7 +76,7 @@ export const createOrder = async (req, res) => {
         await publishEvent('order.created', {
             orderId,
             userId,
-            items: cart.items,
+            items: updatedItems,
             totalAmount,
             shippingAddress
         });

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../services/api";
+import axios from "axios";
 
 export default function ProductCard({
   product,
@@ -25,16 +26,25 @@ export default function ProductCard({
     setFiles([]);
   };
 
+  const [addingToCart, setAddingToCart] = useState(false);
+
   const handleAddToCart = async () => {
+    setAddingToCart(true);
     try {
-      await api.post("/cart/items", {
-        productId: product._id,
-        quantity,
-      });
+      await axios.post(
+        "http://localhost:5002/api/cart/items",
+        {
+          productId: product._id,
+          quantity,
+        },
+        { withCredentials: true },
+      );
       alert("Added to cart!");
     } catch (error) {
       console.error("Error adding to cart:", error);
-      alert("Failed to add to cart");
+      alert("Failed to add to cart. Please try again.");
+    } finally {
+      setAddingToCart(false);
     }
   };
 
@@ -92,9 +102,10 @@ export default function ProductCard({
               />
               <button
                 onClick={handleAddToCart}
-                className="rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600"
+                disabled={addingToCart}
+                className="rounded-full bg-blue-500 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Add to Cart
+                {addingToCart ? "Adding..." : "Add to Cart"}
               </button>
             </div>
           )}

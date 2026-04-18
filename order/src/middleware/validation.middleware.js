@@ -41,34 +41,35 @@ export const validateCreateOrder = [
 
 // Validation for updating address
 export const validateUpdateAddress = [
-    body('street')
+    body('shippingAddress.street')
         .isString()
         .notEmpty()
         .withMessage('Street is required'),
 
-    body('city')
+    body('shippingAddress.city')
         .isString()
         .notEmpty()
         .withMessage('City is required'),
 
-    body('state')
+    body('shippingAddress.state')
         .isString()
         .notEmpty()
         .withMessage('State is required'),
 
-    body('country')
+    body('shippingAddress.country')
         .isString()
         .notEmpty()
         .withMessage('Country is required'),
 
-    body('zipCode')
+    body('shippingAddress.zipCode')
         .isString()
         .notEmpty()
         .withMessage('Zip code is required'),
 
     param('id')
-        .isUUID()
-        .withMessage('Invalid order ID'),
+        .isString()
+        .notEmpty()
+        .withMessage('Order ID is required'),
 
     (req, res, next) => {
         const errors = validationResult(req);

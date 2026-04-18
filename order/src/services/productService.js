@@ -4,14 +4,16 @@ const PRODUCT_SERVICE_URL = process.env.PRODUCT_SERVICE_URL || 'http://localhost
 
 export async function checkInventory(items) {
     try {
-        // Check if all items are in stock
+        // Check if all items are in stock and get prices
         const availabilityPromises = items.map(async (item) => {
             const response = await axios.get(`${PRODUCT_SERVICE_URL}/${item.productId}`);
-            const product = response.data;
+            const product = response.data.data || response.data;
             return {
                 productId: item.productId,
                 available: product.stock >= item.quantity,
-                availableStock: product.stock
+                availableStock: product.stock,
+                price: product.priceAmount,
+                name: product.title
             };
         });
 
@@ -20,7 +22,8 @@ export async function checkInventory(items) {
 
         return {
             available: unavailableItems.length === 0,
-            unavailableItems
+            unavailableItems,
+            itemsWithPrices: availabilityResults
         };
     } catch (error) {
         console.error('Error checking inventory:', error);

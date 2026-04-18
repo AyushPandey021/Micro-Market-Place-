@@ -9,22 +9,26 @@ export default defineConfig({
             '/api/auth': {
                 target: 'http://localhost:3000',
                 changeOrigin: true,
-                secure: false
+                secure: false,
+                rewrite: (path) => path
             },
             '/api/products': {
                 target: 'http://localhost:5000',
                 changeOrigin: true,
-                secure: false
+                secure: false,
+                rewrite: (path) => path
             },
             '/api/orders': {
                 target: 'http://localhost:5001',
                 changeOrigin: true,
-                secure: false
+                secure: false,
+                rewrite: (path) => path
             },
             '/api/cart': {
                 target: 'http://localhost:5002',
                 changeOrigin: true,
-                secure: false
+                secure: false,
+                rewrite: (path) => path
             }
         }
     }

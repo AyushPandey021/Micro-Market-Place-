@@ -15,14 +15,18 @@ export async function connectRabbitMQ() {
 
 export async function publishEvent(eventType, data) {
     if (!channel) {
-        console.error('RabbitMQ channel not available');
+        console.warn('RabbitMQ channel not available, skipping event publish');
         return;
     }
 
-    const exchange = 'order_events';
-    await channel.assertExchange(exchange, 'topic', { durable: true });
-    channel.publish(exchange, eventType, Buffer.from(JSON.stringify(data)));
-    console.log(`Event published: ${eventType}`, data);
+    try {
+        const exchange = 'order_events';
+        await channel.assertExchange(exchange, 'topic', { durable: true });
+        channel.publish(exchange, eventType, Buffer.from(JSON.stringify(data)));
+        console.log(`Event published: ${eventType}`, data);
+    } catch (error) {
+        console.error('Error publishing event:', error);
+    }
 }
 
 export async function closeRabbitMQ() {
