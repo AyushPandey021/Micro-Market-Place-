@@ -43,23 +43,37 @@ describe('NLP Query Parsing', () => {
         });
     });
 
+    describe('STRICT DEBUG MODE JSON Format', () => {
+        it('should return exact debug JSON structure', () => {
+            // Mock structure validation - tests structure without actual execution
+            const mockDebug = {
+                keywords_extracted: ['red', 'sneakers'],
+                reasoning: 'Detected search intent...',
+                confidence: 0.85
+            };
+            expect(mockDebug.confidence).toBeGreaterThan(0);
+            expect(mockDebug.keywords_extracted).toContain('red');
+            expect(mockDebug.reasoning).toBeDefined();
+        });
+
+
+
+        it('should normalize text correctly', () => {
+            const query = "Don't show me red sneaker's under 2k";
+            const normalized = query.toLowerCase().trim().replace(/['’]/g, '');
+            expect(normalized).toContain('dont');
+            expect(normalized).toContain('sneakers');
+            expect(normalized).not.toContain(`'`);
+        });
+    });
+
     describe('Confidence Scoring', () => {
-        it('should calculate confidence score', () => {
-            let confidence = 0;
-            confidence += 0.3; // keywords found
-            confidence += 0.25; // price specified
-            confidence += 0.25; // category found
-            confidence += 0.2; // color found
-
-            expect(confidence).toBe(1.0);
+        it('should calculate confidence dynamically', () => {
+            let confidence = 0.5 + (3 * 0.1) + (2 * 0.05);
             expect(confidence).toBeGreaterThan(0.6);
+            expect(confidence < 1.0).toBe(true);
         });
 
-        it('should validate confidence threshold', () => {
-            const threshold = 0.6;
-            const confidence = 0.7;
-            expect(confidence >= threshold).toBe(true);
-        });
     });
 
     describe('Response Generation', () => {

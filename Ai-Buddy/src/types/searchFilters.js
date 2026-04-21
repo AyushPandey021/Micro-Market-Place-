@@ -7,9 +7,13 @@ export const SearchFiltersSchema = z.object({
   maxPrice: z.number().optional(),
   color: z.string().optional(),
   size: z.string().optional(),
+  brand: z.string().optional(),
   sortBy: z.enum(['relevance', 'priceLow', 'priceHigh', 'newest']).default('relevance'),
   limit: z.number().default(5),
 });
+
+export { ShoppingFiltersSchema } from './shoppingFilters.js';
+
 
 
 

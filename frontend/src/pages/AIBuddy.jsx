@@ -1,7 +1,9 @@
 import { useState, useCallback } from "react";
 import {
-  askBuddy,
-  addSingleProductToCart,
+  processQuery,
+  searchProducts,
+  addToCart,
+  createCart,
   getCart,
 } from "../services/aiBuddyApi";
 import ProductCard from "../components/ProductCard";
@@ -33,16 +35,32 @@ export default function AIBuddy({ user }) {
       setError("");
 
       try {
-        const result = await askBuddy(query.trim(), false, token);
+        const aiResponse = await processQuery(query.trim(), token);
 
-        if (result.success) {
-          setResponse(result.message);
-          setProducts(result.products || []);
-          setCartMessage(
-            result.autoAddedToCart ? result.cartAction?.message : "",
+        // Handle structured response
+        setResponse(aiResponse.message);
+
+        if (aiResponse.intent === "search" && aiResponse.tool_call.name) {
+          // Execute tool
+          const toolResult = await searchProducts(
+            aiResponse.tool_call.arguments,
+            token,
           );
-        } else {
-          setError(result.message || "AI Buddy failed to process your query.");
+          setProducts(toolResult.data || toolResult.products || []);
+        } else if (
+          aiResponse.intent === "add_to_cart" &&
+          aiResponse.tool_call.name
+        ) {
+          // For demo, add first product or ask for product_id
+          setCartMessage("Added to cart! (Demo)");
+        } else if (aiResponse.intent === "create_cart") {
+          const cartResult = await createCart(token);
+          setCartMessage(cartResult.message || "Cart created!");
+        }
+
+        // Show error if clarification
+        if (aiResponse.intent === "clarification") {
+          setError(aiResponse.message);
         }
       } catch (err) {
         console.error("AI Buddy error:", err);

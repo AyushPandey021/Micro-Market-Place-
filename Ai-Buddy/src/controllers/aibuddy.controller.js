@@ -1,39 +1,65 @@
 import logger from '../utils/logger.js';
+import * as aiProcessor from '../services/aiProcessor.js';
 import * as aiBuddyService from '../services/aibuddy.service.js';
 
+
 /**
- * POST /ask - Process natural language query
+ * POST /process - AI Buddy process query (NEW SPEC ENDPOINT)
  */
-export const askBuddy = async (req, res) => {
+export const processQuery = async (req, res) => {
     try {
-        const { query, autoAddToCart } = req.body;
+        const { query } = req.body;
         const token = req.token;
 
-        logger.info({ query, autoAddToCart, userId: req.user?.id, token: !!req.token }, 'Ask Buddy endpoint called');
+        logger.info({ query, token: !!token }, 'AI Buddy processQuery called');
 
-        if (!token) {
-            return res.status(401).json({
-                success: false,
-                message: 'Authentication required for this operation',
+        if (!query) {
+            return res.status(400).json({
+                intent: 'clarification',
+                filters: {},
+                tool_call: { name: '', arguments: {} },
+                message: 'Please provide a query.'
             });
         }
 
-        const result = await aiBuddyService.smartShoppingAssistant(
-            query,
-            autoAddToCart || false,
-            token
-        );
+        const result = await aiProcessor.processAIQuery(query, token);
+
+        res.status(200).json(result);
+    } catch (error) {
+        logger.error(error, 'Error in processQuery controller');
+        res.status(500).json({
+            intent: 'clarification',
+            filters: {},
+            tool_call: { name: '', arguments: {} },
+            message: 'Internal server error. Please try again.',
+        });
+    }
+};
+
+/**
+ * POST /ask - Process natural language query (legacy - redirect to /process)
+ */
+export const askBuddy = async (req, res) => {
+    try {
+        const { query } = req.body;
+        const token = req.token;
+
+        logger.warn('Legacy /ask endpoint used - redirecting to /process');
+
+        const result = await aiProcessor.processAIQuery(query, token);
 
         res.status(200).json(result);
     } catch (error) {
         logger.error(error, 'Error in askBuddy controller');
         res.status(500).json({
-            success: false,
-            message: 'Internal server error',
-            error: error.message,
+            intent: 'clarification',
+            filters: {},
+            tool_call: { name: '', arguments: {} },
+            message: 'Internal server error. Please try again.',
         });
     }
 };
+
 
 /**
  * POST /search - Search for products

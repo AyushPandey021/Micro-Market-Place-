@@ -10,14 +10,23 @@ import {
 const router = express.Router();
 
 /**
+ * @route   POST /ai-buddy/process
+ * @desc    AI Buddy main processing endpoint (SPEC)
+ * @access  Private
+ * @returns Structured JSON response per spec
+ */
+router.post('/process', verifyToken, validateQueryRequest, controller.processQuery);
+
+/**
  * @route   POST /ai-buddy/ask
  * @desc    Ask AI buddy - process natural language query and optionally add to cart
  * @access  Private
  * @param   {string} query - Natural language query (e.g., "Find me red sneakers under ₹2000")
  * @param   {boolean} autoAddToCart - Optional: auto-add top product to cart
- * @returns {Object} Search results with natural language response
+ * @returns {Object} Search results with natural language response (legacy)
  */
 router.post('/ask', verifyToken, validateQueryRequest, controller.askBuddy);
+
 
 /**
  * @route   POST /ai-buddy/search
@@ -47,6 +56,28 @@ router.post('/cart/add', verifyToken, validateAddToCartRequest, controller.addTo
  * @returns {Object} Cart update result
  */
 router.post('/cart/add-single', verifyToken, validateAddSingleProductRequest, controller.addSingleToCart);
+
+/**
+ * @route   POST /ai-buddy/tools/search_products
+ * @desc    Tool endpoint for search_products
+ * @access  Private
+ */
+router.post('/tools/search_products', verifyToken, controller.searchProducts);
+
+/**
+ * @route   POST /ai-buddy/tools/add_to_cart
+ * @desc    Tool endpoint for add_to_cart
+ * @access  Private
+ */
+router.post('/tools/add_to_cart', verifyToken, validateAddSingleProductRequest, controller.addSingleToCart);
+
+/**
+ * @route   POST /ai-buddy/tools/create_cart
+ * @desc    Tool endpoint for create_cart
+ * @access  Private
+ */
+router.post('/tools/create_cart', verifyToken, controller.getCart); // create_cart → getCart for now
+
 
 /**
  * @route   GET /ai-buddy/cart

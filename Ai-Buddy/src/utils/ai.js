@@ -1,101 +1,60 @@
-import { SearchFiltersSchema } from '../types/searchFilters.js';
-import logger from './logger.js';
-import natural from 'natural';
+const logger = require('./logger.js');
+
 
 /**
- * Keyword-based query parser matching README NLP patterns
- * Colors, Categories, Price ranges, Confidence scoring
+ * Improved intent detection matching task spec
+ * "search" | "add_to_cart" | "create_cart" | "clarification"
  */
-export const parseQueryWithAI = async (query) => {
-    try {
-        const lowerQuery = query.toLowerCase();
+export const detectIntent = (query) => {
+    const lowerQuery = query.toLowerCase().trim();
 
-        // Define patterns from README
-        const colors = ['red', 'blue', 'green', 'yellow', 'black', 'white', 'pink', 'purple', 'orange', 'brown', 'gray', 'grey', 'silver', 'gold'];
-        const categories = {
-            shoes: ['shoe', 'sneaker', 'boot', 'sandal'],
-            shirts: ['shirt', 'tee', 'top'],
-            pants: ['pant', 'jean', 'short', 'trouser'],
-            watches: ['watch', 'clock'],
-            jewelry: ['ring', 'necklace', 'bracelet', 'earring'],
-            bags: ['bag', 'backpack', 'suitcase']
-        };
+    // Add to cart patterns
+    if (lowerQuery.match(/(?:add|put)\\s+(?:to|in)?\\s+cart|buy now|purchase/i)) {
+        return 'add_to_cart';
+    }
 
-        // Price patterns
-        const priceMatch = lowerQuery.match(/(\d+(?:\.\d+)?)(k?)(?:\s*(?:to|to|between)\s*(\d+(?:\.\d+)?)(k?))?\s*(?:₹|rupees?|rs?)?/i) ||
-            lowerQuery.match(/(?:under|below|max)\s*(\d+(?:\.\d+)?)(k?)/i) ||
-            lowerQuery.match(/(?:above|over|min)\s*(\d+(?:\.\d+)?)(k?)/i);
+    // Create cart patterns
+    if (lowerQuery.match(/create (?:new )?cart|(?:new|start|empty) (?:shopping )?cart|begin shopping/i)) {
+        return 'create_cart';
+    }
 
-        let minPrice = undefined, maxPrice = undefined;
-        if (priceMatch) {
-            const [_, lowVal, lowK, highVal, highK] = priceMatch;
-            minPrice = parseFloat(lowVal) * (lowK === 'k' ? 1000 : 1);
-            if (highVal) maxPrice = parseFloat(highVal) * (highK === 'k' ? 1000 : 1);
-            else if (/under|below|max/i.test(lowerQuery)) maxPrice = minPrice;
-            else minPrice = minPrice;
-        }
+    // Clarification/help
+    if (lowerQuery.match(/what|how|help|explain|clarify|\\?|who are you|what can you do/i)) {
+        return 'clarification';
+    }
 
-        // Extract color
-        const color = colors.find(c => lowerQuery.includes(c));
+    // Default search
+    return 'search';
+};
 
-        // Extract category
-        let category = null;
-        for (const [cat, keywords] of Object.entries(categories)) {
-            if (keywords.some(kw => lowerQuery.includes(kw))) {
-                category = cat;
-                break;
+/**
+ * Generate response message based on intent and filters
+ */
+export const generateMessage = (intent, filters = {}) => {
+    switch (intent) {
+        case 'search':
+            let msg = 'Searching';
+            if (filters.keywords?.length) {
+                msg += ` for ${filters.keywords.join(' ')}`;
             }
-        }
+            if (filters.price_max) msg += ` under ${filters.price_max}`;
+            msg += '';
+            return msg;
 
-        // Extract keywords (stemmed)
-        const tokenizer = new natural.WordTokenizer();
-        const stemmedWords = tokenizer.tokenize(lowerQuery)
-            .filter(w => w.length > 2)
-            .map(w => natural.PorterStemmer.stem(w))
-            .filter((w, i, arr) => arr.indexOf(w) === i); // unique
+        case 'add_to_cart':
+            return 'Adding to cart. Please confirm product and quantity.';
 
-        const keywords = stemmedWords.filter(w => !colors.includes(w) && !Object.values(categories).flat().includes(w));
+        case 'create_cart':
+            return 'Creating new shopping cart.';
 
-        // Confidence score
-        let confidence = 0.3; // base for keywords
-        if (keywords.length > 0) confidence += 0.3;
-        if (category) confidence += 0.25;
-        if (color) confidence += 0.2;
-        if (minPrice !== undefined || maxPrice !== undefined) confidence += 0.25;
-        if (confidence < 0.6) confidence = 0.6; // min threshold
+        case 'clarification':
+            return 'Could you clarify? Tell me what you need.';
 
-        const filters = {
-            keywords,
-            category,
-            minPrice,
-            maxPrice,
-            color,
-            size: undefined, // TODO: implement size parsing
-            sortBy: 'relevance',
-            limit: 5,
-            confidence
-        };
-
-        logger.info({ query, filters, confidence }, 'Keyword query parsed');
-        return SearchFiltersSchema.parse(filters); // validate
-    } catch (error) {
-        logger.error(error, 'Keyword parse failed, basic fallback');
-        return {
-            keywords: query.toLowerCase().split(' ').filter(w => w.length > 2),
-        };
+        default:
+            return 'Processing your request...';
     }
 };
 
-/**
- * Simple response generator (no AI needed)
- */
-export const generateResponseWithAI = async (query, products) => {
-    const count = products.length;
-    if (count === 0) {
-        return `Sorry, no products found for "${query}". Try different keywords!`;
-    }
 
-    const topProducts = products.slice(0, 3).map(p => `${p.name} - ₹${p.price}`).join(', ');
-    return `Found ${count} matching products! Top options: ${topProducts}. ${count > 3 ? `Showing top ${products.length}.` : ''}`;
-};
+
 

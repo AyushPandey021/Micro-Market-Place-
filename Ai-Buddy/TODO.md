@@ -1,26 +1,14 @@
-# AI-Buddy Service Fix - TODO
+# AI Shopping Assistant Implementation TODO
 
-## Current Status: 🚀 Starting Implementation
+## Steps:
 
-### Completed: ✅
+- [x] 1. Update types/shoppingFilters.js (simplify Zod schema to keywords + price_max)
+- [x] 2. Update utils/parseShoppingQuery.js (filters: {keywords, price_max only}; compute normalized_query)
+- [x] 3. Update utils/ai.js (refine detectIntent/generateMessage for exact spec; remove legacy parseQueryWithAI)
+- [x] 4. Update services/aiProcessor.js (exact JSON structure matching task examples)
+- [x] 5. Update **tests**/aiShopping.test.js (align tests with simplified filters)
 
-- [x] Diagnosed root cause: Invalid `@groq/groq-sdk` dependency + import crash
+- [ ] 6. Run tests: cd Ai-Buddy && npm test
+- [ ] 7. Complete
 
-### Completed: ✅
-
-- [x] Step 1: Update package.json (remove invalid dep)
-
-### In Progress: ⏳
-
-- [ ] Step 1: Update package.json (remove invalid dep)
-- [x] Step 2: Rewrite ai.js with keyword parsing fallback (no AI)
-- [ ] Step 3: Clean install dependencies
-- [ ] Step 4: Verify server startup
-- [ ] Step 5: Test health endpoints
-
-### Pending: 🔄
-
-- [ ] Add real AI integration (OpenAI/Groq later)
-- [ ] Integration tests with other services
-
-**Next: package.json edit → npm install → server start**
+Current: Starting edits...
