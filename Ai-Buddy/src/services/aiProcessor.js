@@ -1,86 +1,154 @@
-const logger = require('../utils/logger.js');
-const { detectIntent, generateMessage } = require('../utils/ai.js');
-const { parseShoppingQuery } = require('../utils/parseShoppingQuery.js');
+import Groq from "groq-sdk";
+import * as productLocal from './productLocal.service.js';
+import logger from '../utils/logger.js';
 
+// 🔥 Initialize Groq safely
+let groq = null;
 
-const STOPWORDS = new Set([
-    'find', 'show', 'give', 'me', 'i', 'want', 'please', 'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 'of', 'with'
-]);
+if (process.env.GROQ_API_KEY) {
+    try {
+        groq = new Groq({
+            apiKey: process.env.GROQ_API_KEY,
+        });
+        console.log("✅ Groq initialized");
+    } catch (error) {
+        logger.error('❌ Groq init failed:', error.message);
+        groq = null;
+    }
+} else {
+    logger.warn('⚠️ GROQ_API_KEY missing → fallback mode');
+}
+
+// 🔥 Strong prompt
+const SYSTEM_PROMPT = `You are a shopping assistant.
+
+RULES:
+- Always treat user query as PRODUCT SEARCH
+- NEVER ask clarification
+- Extract ONLY keywords
+- Normalize:
+  - lowercase
+  - remove apostrophes
+  - mens → men
+
+OUTPUT STRICT JSON:
+
+{
+  "intent": "search",
+  "filters": {
+    "keywords": ["men", "kurta"]
+  }
+}
+`;
 
 /**
- * Main AI shopping assistant - EXACT task spec JSON output
- * Handles normalization, filters, tool_call
+ * 🔥 Normalize function (important)
  */
-export const processAIQuery = async (query, token) => {
-    try {
-        logger.info({ query }, 'AI shopping assistant processing');
+const normalizeQuery = (query) => {
+    return query
+        .toLowerCase()
+        .replace(/['’]/g, "")
+        .replace("mens", "men")
+        .trim();
+};
 
-        if (!query || query.trim().length === 0) {
+/**
+ * 🔥 Fallback keyword extraction
+ */
+const extractKeywords = (query) => {
+    return normalizeQuery(query)
+        .split(" ")
+        .filter(word => word.length > 2);
+};
+
+/**
+ * 🚀 MAIN AI FUNCTION
+ */
+export const processAIQuery = async (query) => {
+    try {
+        console.log('🔵 AI Query:', query);
+
+        if (!query || typeof query !== 'string') {
             return {
-                intent: 'clarification',
-                raw_query: '',
-                normalized_query: '',
-                filters: {},
-                tool_call: { name: '', arguments: {} },
-                message: 'Please provide a shopping query.'
+                products: [],
+                message: 'Please enter a valid query.'
             };
         }
 
-        // 1. Intent
-        const intent = detectIntent(query);
+        let keywords = [];
 
-        // 2. Raw 
-        const raw_query = query.trim();
+        // =============================
+        // 🧠 1. TRY GROQ AI
+        // =============================
+        if (groq) {
+            try {
+                const completion = await groq.chat.completions.create({
+                    messages: [
+                        { role: 'system', content: SYSTEM_PROMPT },
+                        { role: 'user', content: query }
+                    ],
+                    model: process.env.GROQ_MODEL || 'llama-3.3-70b-versatile',
+                    temperature: 0,
+                    response_format: { type: 'json_object' }
+                });
 
-        // 3. Parse filters (search only)
-        const parseResult = intent === 'search' ? parseShoppingQuery(raw_query) : { normalized_query: '', filters: {} };
-        const normalized_query = intent === 'search' ? parseResult.normalized_query : '';
-        const filters = parseResult.filters;
+                const aiResponse = completion.choices[0]?.message?.content;
+                console.log('🟢 AI Raw Response:', aiResponse);
 
+                const parsed = JSON.parse(aiResponse);
 
-        // 4. Build tool_call
-        const tool_call = { name: '', arguments: {} };
-        let message = '';
+                keywords = parsed?.filters?.keywords || [];
 
-        if (intent === 'search') {
-            tool_call.name = 'search_products';
-            tool_call.arguments = filters; // exact filters match task examples
-            message = generateMessage(intent, filters);
-        } else if (intent === 'add_to_cart') {
-            tool_call.name = 'add_to_cart';
-            tool_call.arguments = {}; // Frontend fills product_id, quantity
-            message = generateMessage(intent);
-        } else if (intent === 'create_cart') {
-            tool_call.name = 'create_cart';
-            tool_call.arguments = {};
-            message = generateMessage(intent);
+                if (!Array.isArray(keywords) || keywords.length === 0) {
+                    throw new Error("Empty keywords from AI");
+                }
+
+            } catch (err) {
+                console.log('⚠️ AI failed → fallback:', err.message);
+                keywords = extractKeywords(query);
+            }
         } else {
-            message = generateMessage(intent);
+            // =============================
+            // 🔄 2. FALLBACK (NO AI)
+            // =============================
+            keywords = extractKeywords(query);
         }
 
+        console.log('🟡 Final Keywords:', keywords);
 
-        const result = {
+        // =============================
+        // 🔍 3. SEARCH PRODUCTS
+        // =============================
+        const products = await productLocal.searchProducts(keywords);
+
+        console.log('🟣 Products Found:', products.length);
+
+        // =============================
+        // 🧾 4. RESPONSE
+        // =============================
+        const cartKeywords = ['add', 'buy', 'cart', 'purchase'];
+        const hasCartIntent = keywords.some(kw => cartKeywords.includes(kw));
+        const intent = hasCartIntent && products.length > 0 ? 'add_to_cart' : 'search';
+        const firstProductId = intent === 'add_to_cart' ? products[0]?._id : null;
+
+        return {
             intent,
-            raw_query,
-            normalized_query: intent === 'search' ? normalized_query : '',
-            filters: intent === 'search' ? filters : {},
-            tool_call,
-            message
+            firstProductId,
+            products,
+            keywords,
+            message: hasCartIntent
+                ? `Added ${products[0]?.name || 'product'} to cart (${products.length} found)`
+                : (products.length > 0
+                    ? `Found ${products.length} products`
+                    : 'No products found. Try different keywords.')
         };
 
-        logger.info({ result }, 'AI shopping assistant response');
-        return result;
-
     } catch (error) {
-        logger.error({ query, error: error.message }, 'AI processor error');
+        console.error('🔴 AI Service Error:', error.message);
+
         return {
-            intent: 'clarification',
-            raw_query: query || '',
-            normalized_query: '',
-            filters: {},
-            tool_call: { name: '', arguments: {} },
-            message: 'Sorry, processing error. Please try again.'
+            products: [],
+            message: 'AI service temporarily unavailable.'
         };
     }
 };
-

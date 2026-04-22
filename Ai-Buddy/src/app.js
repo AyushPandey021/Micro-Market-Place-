@@ -3,8 +3,14 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import logger from './utils/logger.js';
 import aiBuddyRoutes from './routes/aibuddy.routes.js';
+import { connectDB } from './config/db.js';
+import * as productLocal from './services/productLocal.service.js';
 
 const app = express();
+
+// DB Connection + Seed
+await connectDB();
+await productLocal.ensureSampleData();
 
 // Middleware
 app.use(cors({
@@ -54,16 +60,11 @@ app.use('/ai-buddy', aiBuddyRoutes);
 // Root endpoint
 app.get('/', (req, res) => {
   res.json({
-    message: 'AI Buddy Service - Personal Shopping Assistant',
+    message: 'AI Buddy Service - Personal Shopping Assistant ✅ COMPLETE',
     version: '1.0.0',
     endpoints: {
+      process: 'POST /ai-buddy/process {"query": "men kurta"}',
       health: 'GET /health',
-      ask: 'POST /ai-buddy/ask',
-      search: 'POST /ai-buddy/search',
-      cartAdd: 'POST /ai-buddy/cart/add',
-      cartAddSingle: 'POST /ai-buddy/cart/add-single',
-      cartGet: 'GET /ai-buddy/cart',
-      parseQuery: 'POST /ai-buddy/parse',
     },
   });
 });
@@ -88,3 +89,4 @@ app.use((err, req, res, next) => {
 });
 
 export default app;
+

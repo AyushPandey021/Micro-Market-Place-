@@ -4,7 +4,7 @@ import app from './src/app.js';
 import initSocketServer from './src/sockets/socket.server.js';
 import logger from './src/utils/logger.js';
 
-const PORT = process.env.PORT || 5005;
+const PORT = process.env.PORT || 5006;
 
 // Create HTTP server
 const server = http.createServer(app);
@@ -17,7 +17,7 @@ server.listen(PORT, () => {
     logger.info(
         {
             port: PORT,
-            environment: process.env.NODE_ENV || 'development',
+            environment: process.env.NODE_ENV ||5005,
         },
         'AI Buddy Service started'
     );

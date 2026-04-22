@@ -1,13 +1,15 @@
-const { ShoppingFiltersSchema } = require('../types/shoppingFilters.js');
-const logger = require('./logger.js');
 
+
+import logger from './logger.js';
+import { ShoppingFiltersSchema } from '../types/shoppingFilters.js';
 
 const NORMALIZATIONS = {
     "mens": "men",
     "womens": "women",
-    "kid's": "kids",
+    "kids": "kids",
     // Add more mappings as needed
 };
+
 
 const STOPWORDS = new Set([
     'find', 'show', 'give', 'me', 'i', 'want', 'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 'of', 'with'
@@ -28,13 +30,12 @@ export const parseShoppingQuery = (query) => {
         });
 
         const words = normalized.split(/\s+/).filter(w => w.length > 1);
-
-
         // Extract keywords (non-stopwords)
-        const keywords = words.filter(word => !STOPWORDS.has(word));
+        const keywords = Array.isArray(words) ? words.filter(word => typeof word === 'string' && !STOPWORDS.has(word)).slice(0, 5) : [];
+
 
         const filters = {
-            keywords: keywords.length > 0 ? keywords.slice(0, 5) : [], // limit
+            keywords: Array.isArray(keywords) && keywords.length > 0 ? keywords.slice(0, 5) : [], // limit
         };
 
 
@@ -53,12 +54,13 @@ export const parseShoppingQuery = (query) => {
             if (!filters[key]) delete filters[key];
         });
 
-        const normalized_query = normalized;
-        logger.debug({ originalQuery: query, normalized_query, normalized, filters }, 'Shopping query parsed');
+        const normalized_query = keywords.join(' ');
+        logger.debug({ originalQuery: query, normalized_query, keywords, filters }, 'Shopping query parsed');
         return {
             normalized_query,
-            filters: ShoppingFiltersSchema.parse(filters)
+            filters
         };
+
 
     } catch (error) {
         logger.error({ query, error }, 'parseShoppingQuery failed');

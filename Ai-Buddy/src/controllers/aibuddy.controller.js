@@ -4,61 +4,55 @@ import * as aiBuddyService from '../services/aibuddy.service.js';
 
 
 /**
- * POST /process - AI Buddy process query (NEW SPEC ENDPOINT)
+ * POST /ai-buddy/process - Main spec endpoint
+ * Returns {products: [], message: "..."}
  */
 export const processQuery = async (req, res) => {
     try {
         const { query } = req.body;
-        const token = req.token;
+        // Note: new processAIQuery no longer needs token
 
-        logger.info({ query, token: !!token }, 'AI Buddy processQuery called');
+        console.log('📥 POST /process:', query);
 
         if (!query) {
             return res.status(400).json({
-                intent: 'clarification',
-                filters: {},
-                tool_call: { name: '', arguments: {} },
+                products: [],
                 message: 'Please provide a query.'
             });
         }
 
-        const result = await aiProcessor.processAIQuery(query, token);
+        const result = await aiProcessor.processAIQuery(query, req.token);
 
         res.status(200).json(result);
     } catch (error) {
-        logger.error(error, 'Error in processQuery controller');
+        console.error('❌ Process query error:', error.message);
         res.status(500).json({
-            intent: 'clarification',
-            filters: {},
-            tool_call: { name: '', arguments: {} },
+            products: [],
             message: 'Internal server error. Please try again.',
         });
     }
 };
 
+
 /**
- * POST /ask - Process natural language query (legacy - redirect to /process)
+ * POST /ask - Legacy → redirect to /process
  */
 export const askBuddy = async (req, res) => {
     try {
         const { query } = req.body;
-        const token = req.token;
 
-        logger.warn('Legacy /ask endpoint used - redirecting to /process');
-
-        const result = await aiProcessor.processAIQuery(query, token);
+        const result = await aiProcessor.processAIQuery(query, req.token);
 
         res.status(200).json(result);
     } catch (error) {
-        logger.error(error, 'Error in askBuddy controller');
+        console.error('❌ Ask buddy error:', error.message);
         res.status(500).json({
-            intent: 'clarification',
-            filters: {},
-            tool_call: { name: '', arguments: {} },
-            message: 'Internal server error. Please try again.',
+            products: [],
+            message: 'Internal server error.',
         });
     }
 };
+
 
 
 /**
@@ -193,8 +187,8 @@ export const parseQuery = async (req, res) => {
 
         logger.info({ query }, 'Parse query endpoint called');
 
-        const { parseQuery: parseQueryUtil } = await import('../utils/nlp.js');
-        const filters = parseQueryUtil(query);
+        const parseShoppingQuery = (await import('../utils/parseShoppingQuery.js')).parseShoppingQuery;
+        const filters = parseShoppingQuery(query).filters;
 
         res.status(200).json({
             success: true,

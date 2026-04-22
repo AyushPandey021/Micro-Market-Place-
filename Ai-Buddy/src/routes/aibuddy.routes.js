@@ -15,7 +15,7 @@ const router = express.Router();
  * @access  Private
  * @returns Structured JSON response per spec
  */
-router.post('/process', verifyToken, validateQueryRequest, controller.processQuery);
+router.post('/process', optionalVerifyToken, validateQueryRequest, controller.processQuery);
 
 /**
  * @route   POST /ai-buddy/ask

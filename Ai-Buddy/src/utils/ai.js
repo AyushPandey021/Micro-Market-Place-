@@ -1,45 +1,59 @@
-const logger = require('./logger.js');
-
+import logger from './logger.js';
 
 /**
- * Improved intent detection matching task spec
+ * Intent Detection
  * "search" | "add_to_cart" | "create_cart" | "clarification"
  */
 export const detectIntent = (query) => {
     const lowerQuery = query.toLowerCase().trim();
 
-    // Add to cart patterns
-    if (lowerQuery.match(/(?:add|put)\\s+(?:to|in)?\\s+cart|buy now|purchase/i)) {
+    // 🔥 normalize
+    const normalized = lowerQuery.replace(/['’]/g, "");
+
+    // 🛒 Add to cart
+    if (/(add|put).*(cart)|buy|purchase/.test(normalized)) {
         return 'add_to_cart';
     }
 
-    // Create cart patterns
-    if (lowerQuery.match(/create (?:new )?cart|(?:new|start|empty) (?:shopping )?cart|begin shopping/i)) {
+    // 🛍 Create cart
+    if (/(create|new|start|empty).*(cart)/.test(normalized)) {
         return 'create_cart';
     }
 
-    // Clarification/help
-    if (lowerQuery.match(/what|how|help|explain|clarify|\\?|who are you|what can you do/i)) {
+    // ❗ Clarification (ONLY question-type)
+    if (
+        normalized.includes("?") ||
+        normalized.startsWith("what") ||
+        normalized.startsWith("how") ||
+        normalized.startsWith("help") ||
+        normalized.startsWith("why")
+    ) {
         return 'clarification';
     }
 
-    // Default search
+    // 🔥 DEFAULT → SEARCH
     return 'search';
 };
 
 /**
- * Generate response message based on intent and filters
+ * Generate response message
  */
 export const generateMessage = (intent, filters = {}) => {
     switch (intent) {
-        case 'search':
+        case 'search': {
             let msg = 'Searching';
+
             if (filters.keywords?.length) {
                 msg += ` for ${filters.keywords.join(' ')}`;
             }
-            if (filters.price_max) msg += ` under ${filters.price_max}`;
-            msg += '';
+
+            if (filters.price_max) {
+                msg += ` under ₹${filters.price_max}`;
+            }
+
+            msg += '...';
             return msg;
+        }
 
         case 'add_to_cart':
             return 'Adding to cart. Please confirm product and quantity.';
@@ -55,6 +69,31 @@ export const generateMessage = (intent, filters = {}) => {
     }
 };
 
+export const parseQueryWithAI = (query) => {
+    const intent = detectIntent(query);
 
+    // 🔥 normalize
+    const normalized = query
+        .toLowerCase()
+        .replace(/['’]/g, "")
+        .replace("mens", "men");
 
+    // 🔥 keyword extraction
+    const keywords = normalized.split(" ").filter(Boolean);
 
+    return {
+        intent,
+        raw_query: query,
+        normalized_query: normalized,
+        filters: {
+            keywords
+        },
+        tool_call: {
+            name: intent === "search" ? "search_products" : "",
+            arguments: {
+                keywords
+            }
+        },
+        message: generateMessage(intent, { keywords })
+    };
+};

@@ -5,6 +5,7 @@ import {
   addToCart,
   createCart,
   getCart,
+  addSingleProductToCart,
 } from "../services/aiBuddyApi";
 import ProductCard from "../components/ProductCard";
 import AlertBar from "../components/AlertBar";
@@ -37,30 +38,44 @@ export default function AIBuddy({ user }) {
       try {
         const aiResponse = await processQuery(query.trim(), token);
 
-        // Handle structured response
-        setResponse(aiResponse.message);
+        // Handle actual backend response format {products, message}
+        setResponse(
+          aiResponse.message || aiResponse.data?.message || "Processing...",
+        );
 
-        if (aiResponse.intent === "search" && aiResponse.tool_call.name) {
-          // Execute tool
-          const toolResult = await searchProducts(
-            aiResponse.tool_call.arguments,
-            token,
-          );
-          setProducts(toolResult.data || toolResult.products || []);
-        } else if (
+        // Extract products directly from response
+        const responseProducts =
+          aiResponse.products || aiResponse.data?.products || [];
+        setProducts(responseProducts);
+
+        // 🛒 AUTO-ADD TO CART if intent detected
+        if (
           aiResponse.intent === "add_to_cart" &&
-          aiResponse.tool_call.name
+          aiResponse.firstProductId &&
+          token
         ) {
-          // For demo, add first product or ask for product_id
-          setCartMessage("Added to cart! (Demo)");
-        } else if (aiResponse.intent === "create_cart") {
-          const cartResult = await createCart(token);
-          setCartMessage(cartResult.message || "Cart created!");
+          setLoading(true);
+          try {
+            const cartResult = await addSingleProductToCart(
+              aiResponse.firstProductId,
+              1,
+              token,
+            );
+            if (cartResult.success) {
+              setCartMessage(
+                `✅ Auto-added to cart: ${aiResponse.products[0]?.name}`,
+              );
+            }
+          } catch (err) {
+            console.error("Auto-cart error:", err);
+            setError("Auto-add failed (requires login)");
+          } finally {
+            setLoading(false);
+          }
         }
 
-        // Show error if clarification
-        if (aiResponse.intent === "clarification") {
-          setError(aiResponse.message);
+        if (responseProducts.length > 0) {
+          setError("");
         }
       } catch (err) {
         console.error("AI Buddy error:", err);

@@ -31,14 +31,14 @@ export default defineConfig({
                 rewrite: (path) => path
             },
             '/api/ai-buddy': {
-                target: 'http://localhost:5005',
+                target: 'http://localhost:5006',
                 changeOrigin: true,
                 secure: false,
                 ws: true,
                 rewrite: (path) => path.replace(/^\/api\/ai-buddy/, '/ai-buddy')
             },
             '/socket.io': {
-                target: 'http://localhost:5005',
+                target: 'http://localhost:5006',
                 ws: true,
                 changeOrigin: true,
                 secure: false

@@ -13,15 +13,18 @@ describe('AI Shopping Assistant - Task Examples', () => {
             const result = parseShoppingQuery("Men's Stylish Kurta");
             expect(result.filters.keywords).toHaveLength(3);
             expect(result.filters.keywords).toEqual(expect.arrayContaining(['men', 'stylish', 'kurta']));
-            expect(result.normalized_query).toBe("men's stylish kurta");
+            expect(result.normalized_query).toBe("men stylish kurta");
         });
+
 
 
         it('Example 2: "Find red shoes under 2000" → price_max', () => {
             const result = parseShoppingQuery('Find red shoes under 2000');
             expect(result.filters.price_max).toBe(2000);
             expect(result.filters.keywords).toEqual(['red', 'shoes']);
+            expect(result.normalized_query).toBe('red shoes');
         });
+
 
 
         it('Normalization: apostrophes and mappings', () => {
@@ -54,7 +57,7 @@ describe('AI Shopping Assistant - Task Examples', () => {
             const result = await processAIQuery("Men's Stylish Kurta");
             expect(result.intent).toBe('search');
             expect(result.raw_query).toBe("Men's Stylish Kurta");
-            expect(result.normalized_query).toContain('men stylish kurta');
+            expect(result.normalized_query).toBe("men stylish kurta");
             expect(result.filters).toHaveProperty('keywords');
             expect(result.filters.keywords).toHaveLength(3);
             expect(result.filters.keywords).toEqual(expect.arrayContaining(['men', 'stylish', 'kurta']));
@@ -63,6 +66,7 @@ describe('AI Shopping Assistant - Task Examples', () => {
             expect(result.tool_call.arguments.keywords).toEqual(expect.arrayContaining(['men', 'stylish', 'kurta']));
             expect(result.message).toContain('Searching');
         });
+
 
 
         it('Example 2: "Find red shoes under 2000"', async () => {
