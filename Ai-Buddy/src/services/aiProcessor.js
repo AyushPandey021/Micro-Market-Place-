@@ -128,7 +128,16 @@ export const processAIQuery = async (query) => {
         // =============================
         const cartKeywords = ['add', 'buy', 'cart', 'purchase'];
         const hasCartIntent = keywords.some(kw => cartKeywords.includes(kw));
-        const intent = hasCartIntent && products.length > 0 ? 'add_to_cart' : 'search';
+
+        // 🔒 Prevent auto-add for vague/generic queries like "add product in cart"
+        // Require at least one specific product descriptor beyond generic placeholders
+        const genericProductWords = new Set(['product', 'item', 'thing', 'something', 'anything', 'stuff', 'object', 'goods']);
+        const specificKeywords = keywords.filter(
+            kw => !cartKeywords.includes(kw) && !genericProductWords.has(kw)
+        );
+        const isSpecificQuery = specificKeywords.length > 0;
+
+        const intent = hasCartIntent && isSpecificQuery && products.length > 0 ? 'add_to_cart' : 'search';
         const firstProductId = intent === 'add_to_cart' ? products[0]?._id : null;
 
         return {
@@ -136,7 +145,7 @@ export const processAIQuery = async (query) => {
             firstProductId,
             products,
             keywords,
-            message: hasCartIntent
+            message: intent === 'add_to_cart'
                 ? `Added ${products[0]?.name || 'product'} to cart (${products.length} found)`
                 : (products.length > 0
                     ? `Found ${products.length} products`

@@ -39,8 +39,13 @@ describe('AI Shopping Assistant - Task Examples', () => {
             expect(detectIntent('red shoes')).toBe('search');
         });
 
-        it('Detects add_to_cart', () => {
+        it('Detects add_to_cart with specific product', () => {
             expect(detectIntent('add red shoes to cart')).toBe('add_to_cart');
+        });
+
+        it('Does NOT detect add_to_cart for vague queries', () => {
+            expect(detectIntent('add product in cart')).toBe('search');
+            expect(detectIntent('add item to cart')).toBe('search');
         });
 
         it('Detects create_cart', () => {
@@ -81,11 +86,15 @@ describe('AI Shopping Assistant - Task Examples', () => {
         });
 
 
-        it('Non-search intent: empty filters', async () => {
-            const result = await processAIQuery('add to cart');
+        it('Non-search intent: specific product', async () => {
+            const result = await processAIQuery('add red shoes to cart');
             expect(result.intent).toBe('add_to_cart');
-            expect(result.filters).toEqual({});
-            expect(result.normalized_query).toBe('');
+            expect(result.keywords).toContain('shoes');
+        });
+
+        it('Vague cart query defaults to search', async () => {
+            const result = await processAIQuery('add product in cart');
+            expect(result.intent).toBe('search');
         });
 
         it('Empty query: clarification', async () => {

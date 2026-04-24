@@ -10,9 +10,16 @@ export const detectIntent = (query) => {
     // 🔥 normalize
     const normalized = lowerQuery.replace(/['’]/g, "");
 
-    // 🛒 Add to cart
+    // 🛒 Add to cart — only if query has a specific product descriptor
     if (/(add|put).*(cart)|buy|purchase/.test(normalized)) {
-        return 'add_to_cart';
+        const genericProductWords = ['product', 'item', 'thing', 'something', 'anything', 'stuff', 'object', 'goods'];
+        const words = normalized.split(/\s+/);
+        const specificWords = words.filter(
+            w => w.length > 2 && !['add', 'put', 'cart', 'buy', 'purchase', 'to', 'in', 'into', 'a', 'an', 'the', 'my'].includes(w) && !genericProductWords.includes(w)
+        );
+        if (specificWords.length > 0) {
+            return 'add_to_cart';
+        }
     }
 
     // 🛍 Create cart
